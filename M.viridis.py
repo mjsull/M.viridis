@@ -44,7 +44,7 @@ def hsl_to_str(h, s, l):
 
 # main function for drawing tree
 def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, bootstrap, group_file, grid_options, the_table, pres_abs, circular):
-    t = Tree(the_tree)
+    t = Tree(the_tree, quoted_node_names=True)
 #    t.ladderize()
     font_size = 8
     font_type = 'Heveltica'
@@ -82,8 +82,6 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
                         groups[group_dict[j]].append(i)
                     else:
                         groups[group_dict[j]] = [i]
-        print groups
-        print group_dict
         coloured_nodes = []
         for i in groups:
             the_col = i
@@ -114,7 +112,6 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
         if back_color:
             # for each common ancestor node get it's closest common ancestor neighbour and find the common ancestor of those two nodes
             # colour the common ancestor then add it to the group - continue until only the root node is left
-            print ca_list
             while len(ca_list) > 1:
                 distance = float('inf')
                 for i, col1 in ca_list:
@@ -255,11 +252,12 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
                   (66,102,0),(255,0,16),(94,241,242),(0,153,143),(224,255,102),(116,10,255),(153,0,0),(255,255,128),
                   (255,255,0),(255,80,5), (0, 0, 0), (50, 50, 50)]
     up_to_colour = {}
+    ts = TreeStyle()
+    column_list = []
+    width_dict = {}
     if not grid_options is None:
-        column_list = []
         colour_dict = {}
         type_dict = {}
-        width_dict = {}
         min_val_dict = {}
         max_val_dict = {}
         leaf_name_dict = {}
@@ -355,7 +353,6 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
             new_desc = open(out_file + '.new_desc', 'w')
         else:
             new_desc = open('viridis.new_desc', 'w')
-        ts = TreeStyle()
         ts.legend_position = 3
         leg_column = 0
         for num, i in enumerate(column_list):
@@ -426,11 +423,11 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
         len_dict = {}
         gene_list = []
         ts.legend.add_face(TextFace(font_gap * ' ' + 'Gene present/absent' + ' ' * font_buffer, fsize=font_size, ftype=font_type, tight_text=True), column=starting_col+1)
-        ts.legend.add_face(RectFace(width_dict[i], 20, '#FFFFFF', '#FFFFFF'), column=starting_col)
+        ts.legend.add_face(RectFace(20, 20, '#FFFFFF', '#FFFFFF'), column=starting_col)
         ts.legend.add_face(TextFace(font_gap * ' ' + 'Gene present/absent' + ' ' * font_buffer, fsize=font_size, ftype=font_type, tight_text=True), column=starting_col+1)
-        ts.legend.add_face(RectFace(width_dict[i], 20, "#5ba965", "#5ba965"), column=starting_col)
+        ts.legend.add_face(RectFace(20, 20, "#5ba965", "#5ba965"), column=starting_col)
         ts.legend.add_face(TextFace(font_gap * ' ' + 'Gene present/absent' + ' ' * font_buffer, fsize=font_size, ftype=font_type, tight_text=True), column=starting_col+1)
-        ts.legend.add_face(RectFace(width_dict[i], 20, "#cb5b4c", "#cb5b4c"), column=starting_col)
+        ts.legend.add_face(RectFace(20, 20, "#cb5b4c", "#cb5b4c"), column=starting_col)
         with open(pres_abs[0]) as f:
             for line in f:
                 if line.startswith('>'):
@@ -445,11 +442,17 @@ def draw_tree(the_tree, colour, back_color, label, out_file, the_scale, extend, 
         min_length = 0.9
         min_ident = 90
         for n in t.iter_leaves():
-            the_name = n.name[1:-1]
+            the_name = n.name
+            if the_name[0] == '"' and the_name[-1] == '"':
+                the_name = the_name[1:-1]
             if the_name.endswith('.ref'):
                 the_name = the_name[:-4]
+            if not os.path.exists(folder + '/' + the_name):
+                for q in os.listdir(folder):
+                    if q.startswith(the_name):
+                        the_name = q
             if not os.path.exists(the_name + '.blast'):
-                subprocess.Popen('blastx -query ' + folder + '/' + the_name + ' -db tempdb -outfmt 6 -num_threads 6 -out ' + the_name + '.blast', shell=True).wait()
+                subprocess.Popen('blastx -query ' + folder + '/' + the_name + ' -db tempdb -outfmt 6 -num_threads 24 -out ' + the_name + '.blast', shell=True).wait()
             gotit = set()
             with open(the_name + '.blast') as b:
                 for line in b:
